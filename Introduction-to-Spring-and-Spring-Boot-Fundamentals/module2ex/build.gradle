@@ -1,0 +1,28 @@
+plugins {
+	id 'org.springframework.boot' version '2.1.6.RELEASE'
+	id 'java'
+}
+
+apply plugin: 'io.spring.dependency-management'
+
+group = 'com.example'
+version = '1.0'
+sourceCompatibility = '11'
+
+repositories {
+	mavenCentral()
+}
+
+test {
+	useJUnitPlatform()
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	testImplementation('org.springframework.boot:spring-boot-starter-test') { 
+		exclude module: 'junit'
+	}
+// https://mvnrepository.com/artifact/org.junit.jupiter/junit-jupiter-api
+	testCompile 'org.junit.jupiter:junit-jupiter:5.4.0'
+}
+
