@@ -3,6 +3,7 @@ package com.hannah.amazingtalkerhw.config;
 import com.hannah.amazingtalkerhw.security.CustomUserDetailsService;
 import com.hannah.amazingtalkerhw.security.RestAuthenticationEntryPoint;
 import com.hannah.amazingtalkerhw.security.oauth.CustomOAuth2UserService;
+import com.hannah.amazingtalkerhw.security.oauth.CustomOidc2UserService;
 import com.hannah.amazingtalkerhw.security.oauth.OAuth2AuthenticationFailureHandler;
 import com.hannah.amazingtalkerhw.security.oauth.OAuth2AuthenticationSuccessHandler;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,11 +23,6 @@ import org.springframework.security.oauth2.client.web.HttpSessionOAuth2Authoriza
 
 @Configuration
 @EnableWebSecurity
-@EnableGlobalMethodSecurity(
-        securedEnabled = true,
-        jsr250Enabled = true,
-        prePostEnabled = true
-)
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
     @Autowired
     private CustomUserDetailsService customUserDetailsService;
@@ -35,25 +31,14 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     private CustomOAuth2UserService customOAuth2UserService;
 
     @Autowired
+    private CustomOidc2UserService customOidc2UserService;
+
+    @Autowired
     private OAuth2AuthenticationSuccessHandler oAuth2AuthenticationSuccessHandler;
 
     @Autowired
     private OAuth2AuthenticationFailureHandler oAuth2AuthenticationFailureHandler;
 
-//    @Bean
-//    public TokenAuthenticationFilter tokenAuthenticationFilter() {
-//        return new TokenAuthenticationFilter();
-//    }
-
-    /*
-    By default, Spring OAuth2 uses HttpSessionOAuth2AuthorizationRequestRepository to save
-    the authorization request. But, since our service is stateless, we can't save it in
-    the session. We'll save the request in a Base64 encoded cookie instead.
-  */
-//    @Bean
-//    public HttpCookieOAuth2AuthorizationRequestRepository cookieAuthorizationRequestRepository() {
-//        return new HttpCookieOAuth2AuthorizationRequestRepository();
-//    }
     @Bean
     public AuthorizationRequestRepository customAuthorizationRequestRepository() {
         return new HttpSessionOAuth2AuthorizationRequestRepository();
@@ -82,9 +67,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
         http
                 .cors()
                 .and()
-//                .sessionManagement()
-//                .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-//                .and()
                 .csrf()
                 .disable()
                 .formLogin()
@@ -95,7 +77,7 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .authenticationEntryPoint(new RestAuthenticationEntryPoint())
                 .and()
                 .authorizeRequests()
-                .antMatchers("/auth/**", "/oauth2/**")
+                .antMatchers("/signup", "/login", "/oauth2/**")
                 .permitAll()
                 .anyRequest().authenticated()
                 .and()
@@ -108,13 +90,12 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .baseUri("/oauth2/callback/*")
                 .and()
                 .userInfoEndpoint()
+                .oidcUserService(customOidc2UserService)
                 .userService(customOAuth2UserService)
                 .and()
                 .successHandler(oAuth2AuthenticationSuccessHandler)
                 .failureHandler(oAuth2AuthenticationFailureHandler);
 
 
-        // Add our custom Token based authentication filter
-//        http.addFilterBefore(tokenAuthenticationFilter(), UsernamePasswordAuthenticationFilter.class);
     }
 }

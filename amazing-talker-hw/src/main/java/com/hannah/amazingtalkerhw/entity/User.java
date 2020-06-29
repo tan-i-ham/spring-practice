@@ -5,7 +5,6 @@ import com.hannah.amazingtalkerhw.common.ExtendedEmailValidator;
 import com.sun.istack.NotNull;
 
 import javax.persistence.*;
-import javax.validation.constraints.Email;
 
 @Entity
 @Table(name = "users", uniqueConstraints = {

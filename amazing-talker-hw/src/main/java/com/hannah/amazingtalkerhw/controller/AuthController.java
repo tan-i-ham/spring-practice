@@ -1,53 +1,42 @@
 package com.hannah.amazingtalkerhw.controller;
 
-import com.hannah.amazingtalkerhw.entity.AuthProvider;
 import com.hannah.amazingtalkerhw.entity.User;
 import com.hannah.amazingtalkerhw.exception.BadRequestException;
 import com.hannah.amazingtalkerhw.payload.ApiResponse;
-import com.hannah.amazingtalkerhw.payload.AuthResponse;
 import com.hannah.amazingtalkerhw.payload.LoginRequest;
 import com.hannah.amazingtalkerhw.payload.SignUpRequest;
-import com.hannah.amazingtalkerhw.repository.UserRepository;
-import com.hannah.amazingtalkerhw.security.TokenProvider;
 import com.hannah.amazingtalkerhw.service.SendMailService;
+import com.hannah.amazingtalkerhw.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import javax.validation.Valid;
 import java.net.URI;
 
 @RestController
-@RequestMapping("/auth")
 public class AuthController {
 
     @Autowired
     private AuthenticationManager authenticationManager;
 
     @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @Autowired
-    private TokenProvider tokenProvider;
+    private UserService userService;
 
     @Autowired
     private SendMailService sendMailService;
 
     @PostMapping("/signup")
     public ResponseEntity<?> registerUser(@Valid @RequestBody SignUpRequest signUpRequest) {
-        if (userRepository.existsByEmail(signUpRequest.getEmail())) {
+        if (userService.isDuplicateEmailAccount(signUpRequest)) {
             throw new BadRequestException("Email address already in use.");
         }
 
@@ -55,30 +44,19 @@ public class AuthController {
             throw new BadRequestException("Password not match");
         }
 
-        // Creating user's account
-        User user = new User();
-        user.setName(signUpRequest.getName());
-        user.setEmail(signUpRequest.getEmail());
-        user.setPassword(signUpRequest.getPassword());
-        user.setProvider(AuthProvider.local);
-        user.setPassword(passwordEncoder.encode(user.getPassword()));
-        user.setInitialCoupon(true);
-
-        User result = userRepository.save(user);
+        User user = userService.createUser(signUpRequest);
         sendMailService.sendRegisterSuccessMail(signUpRequest.getEmail());
 
-        URI location = ServletUriComponentsBuilder
-                .fromCurrentContextPath().path("/user/me")
-                .buildAndExpand(result.getId()).toUri();
-
-
-        return ResponseEntity.created(location)
-                .body(new ApiResponse(true, String.valueOf(user.getId())));
+        HttpHeaders headers = new HttpHeaders();
+        headers.setLocation(URI.create("result"));
+        return new ResponseEntity<>(
+                new ApiResponse(true, String.valueOf(user.getId())),
+                headers,
+                HttpStatus.CREATED);
     }
 
     @PostMapping("/login")
     public ResponseEntity<?> authenticateUser(@Valid @RequestBody LoginRequest loginRequest) {
-
         Authentication authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(
                         loginRequest.getEmail(),
@@ -87,8 +65,13 @@ public class AuthController {
         );
 
         SecurityContextHolder.getContext().setAuthentication(authentication);
+        User user = userService.findUserByEmail(loginRequest.getEmail());
 
-        String token = tokenProvider.createToken(authentication);
-        return ResponseEntity.ok(new AuthResponse(token));
+        HttpHeaders headers = new HttpHeaders();
+        headers.setLocation(URI.create("result"));
+        return new ResponseEntity<>(
+                new ApiResponse(true, String.valueOf(user.getId())),
+                headers,
+                HttpStatus.OK);
     }
 }
