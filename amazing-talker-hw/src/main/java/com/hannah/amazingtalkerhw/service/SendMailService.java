@@ -12,14 +12,12 @@ public class SendMailService {
     private JavaMailSender javaMailSender;
 
     public void sendRegisterSuccessMail(String destinationEmail) {
-
         SimpleMailMessage msg = new SimpleMailMessage();
-        msg.setFrom("no-reply@amazing.com");
+        msg.setFrom("no-reply@amazingtalker.com");
         msg.setTo(destinationEmail);
 
-        msg.setSubject("Testing from Spring Boot");
-        msg.setText("Hello World \n Register Success");
-
+        msg.setSubject("Hello from Amazing talker");
+        msg.setText("Register Success");
 
         javaMailSender.send(msg);
     }

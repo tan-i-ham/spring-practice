@@ -15,7 +15,7 @@ import java.io.OutputStream;
 @Component
 public class OAuth2AuthenticationFailureHandler extends SimpleUrlAuthenticationFailureHandler {
 
-    private String resultUrl = "http://localhost:8080/result";
+    private String RESULT_URL = "http://localhost:8080/result";
 
     @Override
     public void onAuthenticationFailure(HttpServletRequest request,

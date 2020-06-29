@@ -1,6 +1,5 @@
 package com.hannah.amazingtalkerhw.config;
 
-import com.hannah.amazingtalkerhw.security.CustomUserDetailsService;
 import com.hannah.amazingtalkerhw.security.RestAuthenticationEntryPoint;
 import com.hannah.amazingtalkerhw.security.oauth.CustomOAuth2UserService;
 import com.hannah.amazingtalkerhw.security.oauth.CustomOidc2UserService;
@@ -12,7 +11,6 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.BeanIds;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
-import org.springframework.security.config.annotation.method.configuration.EnableGlobalMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityConfigurerAdapter;
@@ -24,9 +22,6 @@ import org.springframework.security.oauth2.client.web.HttpSessionOAuth2Authoriza
 @Configuration
 @EnableWebSecurity
 public class SecurityConfig extends WebSecurityConfigurerAdapter {
-    @Autowired
-    private CustomUserDetailsService customUserDetailsService;
-
     @Autowired
     private CustomOAuth2UserService customOAuth2UserService;
 
@@ -56,14 +51,8 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
     }
 
     @Override
-    public void configure(AuthenticationManagerBuilder authenticationManagerBuilder) throws Exception {
-        authenticationManagerBuilder
-                .userDetailsService(customUserDetailsService)
-                .passwordEncoder(passwordEncoder());
-    }
-
-    @Override
     protected void configure(HttpSecurity http) throws Exception {
+        // basic setting
         http
                 .cors()
                 .and()
@@ -74,13 +63,16 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .httpBasic()
                 .disable()
                 .exceptionHandling()
-                .authenticationEntryPoint(new RestAuthenticationEntryPoint())
-                .and()
+                .authenticationEntryPoint(new RestAuthenticationEntryPoint());
+        // exclude login , signup, sso related url
+        http
                 .authorizeRequests()
                 .antMatchers("/signup", "/login", "/oauth2/**")
                 .permitAll()
-                .anyRequest().authenticated()
-                .and()
+                .anyRequest().authenticated();
+
+        // Oauth related
+        http
                 .oauth2Login()
                 .authorizationEndpoint()
                 .baseUri("/oauth2/authorize")
@@ -95,7 +87,6 @@ public class SecurityConfig extends WebSecurityConfigurerAdapter {
                 .and()
                 .successHandler(oAuth2AuthenticationSuccessHandler)
                 .failureHandler(oAuth2AuthenticationFailureHandler);
-
 
     }
 }
